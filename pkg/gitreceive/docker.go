@@ -63,7 +63,7 @@ func buildImage(context *buildContext) (string, error) {
 
 	response, err := http.Get(context.Tgz)
 	if err != nil {
-		return "", fmt.Errorf("Error while downloading", context.Tgz, "-", err)
+		return "", fmt.Errorf("Error while downloading %v, %v", context.Tgz, err)
 	}
 	defer response.Body.Close()
 
