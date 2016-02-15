@@ -17,7 +17,7 @@ import (
 
 const (
 	endpoint   = "unix:///var/run/docker.sock"
-	slugRunner = "dev-registry.soficom.cl/deis/slugrunner:v1.0.0"
+	slugRunner = "dev-registry.soficom.cl/deis/slugrunner:v1.0.1"
 
 	appTemplate = `FROM {{ .baseImage }}
 

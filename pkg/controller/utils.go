@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/deis/pkg/log"
+
 	"github.com/deis/builder/pkg/conf"
 	"golang.org/x/crypto/ssh"
 )
@@ -69,6 +71,7 @@ func UserInfoFromKey(key ssh.PublicKey) (*UserInfo, error) {
 		return nil, err
 	}
 
+	log.Debug("Checking key fingerprint against workflow, URL: '%v' ", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
