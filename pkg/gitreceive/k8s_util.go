@@ -13,7 +13,7 @@ import (
 
 const (
 	slugBuilderName    = "deis-slugbuilder"
-	slugBuilderImage   = "dev-registry.soficom.cl/soficom/slugbuilder:git-e439cbc"
+	slugBuilderImage   = "registry.soficom.cl/deis/slugbuilder:git-e439cbc"
 	dockerBuilderName  = "deis-dockerbuilder"
 	dockerBuilderImage = "quay.io/deisci/dockerbuilder:v2-beta"
 
