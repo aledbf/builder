@@ -233,11 +233,28 @@ func build(conf *Config, s3Client *s3.S3, kubeClient *client.Client, builderKey,
 		buildHook.Dockerfile = ""
 		// need this to tell the controller what URL to give the slug runner
 		log.Info("Building docker image")
-		dockerName, err := buildImage(&buildContext{
+		bc := &buildContext{
 			AppName: appName,
 			Sha:     gitSha,
 			Tgz:     slugBuilderInfo.PushURL() + "/slug.tgz",
-		})
+		}
+
+		secrets, err := getImagePullSecrets(kubeClient, conf.PodNamespace)
+		if err != nil {
+			return err
+		}
+
+		regHost := os.Getenv("DEIS_REGISTRY_SERVICE_HOST")
+		regAuth, err := authRegistry(regHost, secrets)
+		if err != nil {
+			return err
+		}
+
+		bc.Username = regAuth.Username
+		bc.Password = regAuth.Password
+		bc.ServerAddress = regHost
+
+		dockerName, err := buildImage(bc)
 
 		if err != nil {
 			return err

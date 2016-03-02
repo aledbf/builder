@@ -3,6 +3,7 @@ package gitreceive
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -103,7 +104,7 @@ func buildPod(debug, withAuth bool, name, namespace string, env map[string]inter
 
 	pullSecrets := os.Getenv("PULL_SECRETS")
 	if pullSecrets != "" {
-		secrets := strings.Split(line, ",")
+		secrets := strings.Split(pullSecrets, ",")
 		for _, secret := range secrets {
 			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, api.LocalObjectReference{
 				Name: secret,
@@ -203,4 +204,27 @@ func waitForPodCondition(c *client.Client, ns, podName string, condition func(po
 
 		return false, nil
 	})
+}
+
+func getImagePullSecrets(c *client.Client, namespace string) ([]api.Secret, error) {
+	pullSecrets := os.Getenv("PULL_SECRETS")
+	if pullSecrets == "" {
+		return []api.Secret{}, nil
+	}
+
+	secrets := []api.Secret{}
+
+	secretsNames := strings.Split(pullSecrets, ",")
+	for _, secretName := range secretsNames {
+		secret, err := c.Secrets(namespace).Get(secretName)
+		if err != nil {
+			continue
+		}
+
+		if secret.Type == api.SecretTypeDockercfg {
+			secrets = append(secrets, *secret)
+		}
+	}
+
+	return secrets, nil
 }

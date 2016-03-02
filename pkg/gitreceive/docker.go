@@ -6,13 +6,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"text/template"
 
 	"github.com/deis/pkg/log"
 
+	"k8s.io/kubernetes/pkg/api"
+
 	"github.com/deis/builder/pkg/gitreceive/git"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 const (
@@ -28,9 +31,12 @@ ENV GIT_SHA {{ .gitSHA }}
 var appTemplateTpl = template.Must(template.New("appTemplate").Parse(appTemplate))
 
 type buildContext struct {
-	AppName string
-	Sha     *git.SHA
-	Tgz     string
+	AppName       string
+	Sha           *git.SHA
+	Tgz           string
+	Username      string
+	Password      string
+	ServerAddress string
 }
 
 func buildImage(context *buildContext) (string, error) {
@@ -94,12 +100,21 @@ func buildImage(context *buildContext) (string, error) {
 		return "", err
 	}
 
+	dAuth := docker.AuthConfiguration{}
+
+	if context.ServerAddress != "" {
+		dAuth.Username = context.Username
+		dAuth.Password = context.Password
+		dAuth.ServerAddress = context.ServerAddress
+	}
+
 	log.Info("publishing docker image")
 	err = client.PushImage(docker.PushImageOptions{
 		Name:         getImageName(context.AppName),
 		Tag:          tagName,
 		OutputStream: os.Stdout,
-	}, docker.AuthConfiguration{})
+	}, dAuth)
+
 	if err != nil {
 		return "", fmt.Errorf("unexpected error publishing docker image: %v", err)
 	}
@@ -116,4 +131,30 @@ func getImageName(appName string) string {
 
 func getImageNameTag(appName, tagName string) string {
 	return fmt.Sprintf("%v:%v", getImageName(appName), tagName)
+}
+
+func getAuthFromCfg(data string) (*docker.AuthConfigurations, error) {
+	return docker.NewAuthConfigurations(bytes.NewReader([]byte(data)))
+}
+
+func authRegistry(host string, secrets []api.Secret) (docker.AuthConfiguration, error) {
+	for _, secret := range secrets {
+		data := secret.Data[api.DockerConfigKey]
+		auth, err := getAuthFromCfg(string(data))
+		if err != nil {
+			return docker.AuthConfiguration{}, err
+		}
+
+		for key, value := range auth.Configs {
+			pHost, err := url.Parse(key)
+			if err != nil {
+				continue
+			}
+			if pHost.Host == host {
+				return value, nil
+			}
+		}
+	}
+
+	return docker.AuthConfiguration{}, fmt.Errorf("No docker secrets found for host %v", host)
 }
