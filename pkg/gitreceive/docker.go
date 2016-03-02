@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	endpoint   = "unix:///var/run/docker.sock"
-	slugRunner = "dev-registry.soficom.cl/deis/slugrunner:v1.0.1"
+	endpoint = "unix:///var/run/docker.sock"
 
 	appTemplate = `FROM {{ .baseImage }}
 
@@ -42,7 +41,7 @@ func buildImage(context *buildContext) (string, error) {
 
 	var hookByteBuf bytes.Buffer
 	err = appTemplateTpl.Execute(&hookByteBuf, map[string]string{
-		"baseImage": slugRunner,
+		"baseImage": os.Getenv("SLUGRUNNER_IMAGE"),
 		"tgzURL":    context.Tgz,
 		"gitSHA":    context.Sha.Full(),
 	})

@@ -2,6 +2,7 @@ package gitreceive
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -13,7 +14,6 @@ import (
 
 const (
 	slugBuilderName    = "deis-slugbuilder"
-	slugBuilderImage   = "registry.soficom.cl/deis/slugbuilder:git-e439cbc"
 	dockerBuilderName  = "deis-dockerbuilder"
 	dockerBuilderImage = "quay.io/deisci/dockerbuilder:v2-beta"
 
@@ -69,7 +69,7 @@ func slugbuilderPod(debug, withAuth bool, name, namespace string, env map[string
 	pod := buildPod(debug, withAuth, name, namespace, env)
 
 	pod.Spec.Containers[0].Name = slugBuilderName
-	pod.Spec.Containers[0].Image = slugBuilderImage
+	pod.Spec.Containers[0].Image = os.Getenv("SLUGBUILDER_IMAGE")
 
 	addEnvToPod(pod, tarURLKey, tarURL)
 	addEnvToPod(pod, putURLKey, putURL)
