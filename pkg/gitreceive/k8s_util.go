@@ -101,6 +101,16 @@ func buildPod(debug, withAuth bool, name, namespace string, env map[string]inter
 		},
 	}
 
+	pullSecrets := os.Getenv("PULL_SECRETS")
+	if pullSecrets != "" {
+		secrets := strings.Split(line, ",")
+		for _, secret := range secrets {
+			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, api.LocalObjectReference{
+				Name: secret,
+			})
+		}
+	}
+
 	if withAuth {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, api.Volume{
 			Name: minioUser,
