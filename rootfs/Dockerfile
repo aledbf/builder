@@ -1,4 +1,4 @@
-FROM alpine:3.3
+FROM alpine:edge
 
 # specify the git user's home and name
 ENV GITHOME /home/git
