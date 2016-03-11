@@ -47,7 +47,7 @@ func buildImage(context *buildContext) (string, error) {
 
 	var hookByteBuf bytes.Buffer
 	err = appTemplateTpl.Execute(&hookByteBuf, map[string]string{
-		"baseImage": os.Getenv("SLUGRUNNER_IMAGE"),
+		"baseImage": os.Getenv("SLUGRUNNER_IMAGE_NAME"),
 		"tgzURL":    context.Tgz,
 		"gitSHA":    context.Sha.Full(),
 	})

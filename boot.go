@@ -35,14 +35,6 @@ func main() {
 		log.Printf("Running in debug mode")
 	}
 
-	if os.Getenv("SLUGRUNNER_IMAGE") == "" {
-		log.Fatal("Missing SLUGRUNNER_IMAGE env variable")
-	}
-
-	if os.Getenv("SLUGBUILDER_IMAGE") == "" {
-		log.Fatal("Missing SLUGBUILDER_IMAGE env variable")
-	}
-
 	app := cli.NewApp()
 
 	app.Commands = []cli.Command{

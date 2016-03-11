@@ -70,7 +70,7 @@ func slugbuilderPod(debug, withAuth bool, name, namespace string, env map[string
 	pod := buildPod(debug, withAuth, name, namespace, env)
 
 	pod.Spec.Containers[0].Name = slugBuilderName
-	pod.Spec.Containers[0].Image = os.Getenv("SLUGBUILDER_IMAGE")
+	pod.Spec.Containers[0].Image = os.Getenv("SLUGBUILDER_IMAGE_NAME")
 
 	addEnvToPod(pod, tarURLKey, tarURL)
 	addEnvToPod(pod, putURLKey, putURL)
