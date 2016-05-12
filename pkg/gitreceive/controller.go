@@ -183,7 +183,7 @@ func receive(conf *Config, builderKey, gitSha string) error {
 }
 
 func createBuildHook(
-	slugBuilderInfo *SlugBuilderInfo,
+	image string,
 	gitSha *git.SHA,
 	username,
 	appName string,
@@ -194,15 +194,10 @@ func createBuildHook(
 		Sha:         gitSha.Short(),
 		ReceiveUser: username,
 		ReceiveRepo: appName,
-		Image:       appName,
+		Image:       image,
 		Procfile:    procType,
+		Dockerfile:  "",
 	}
-	if !usingDockerfile {
-		ret.Dockerfile = ""
-		// need this to tell the controller what URL to give the slug runner
-		ret.Image = slugBuilderInfo.AbsoluteSlugObjectKey()
-	} else {
-		ret.Dockerfile = "true"
-	}
+
 	return ret
 }

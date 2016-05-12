@@ -2,7 +2,7 @@ package gitreceive
 
 import (
 	"bytes"
-	"encoding/json"
+	json_encoder "encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -240,9 +240,39 @@ func build(
 
 	log.Info("Build complete.")
 
-	buildHook := createBuildHook(slugBuilderInfo, gitSha, conf.Username, appName, procType, usingDockerfile)
+	log.Info("Building docker image")
+	bc := &buildContext{
+		AppName:      appName,
+		Sha:          gitSha,
+		ArtifactPath: slugBuilderInfo.AbsoluteSlugObjectKey(),
+	}
+
+	secrets, err := getImagePullSecrets(kubeClient, conf.PodNamespace)
+	if err != nil {
+		return err
+	}
+
+	regHost := os.Getenv("DEIS_REGISTRY_SERVICE_HOST")
+	regAuth, err := authRegistry(regHost, secrets)
+	if err != nil {
+		return err
+	}
+
+	bc.Username = regAuth.Username
+	bc.Password = regAuth.Password
+	bc.ServerAddress = regHost
+
+	dockerName, err := buildImage(storageDriver, bc)
+	if err != nil {
+		return err
+	}
+
+	buildHook := createBuildHook(dockerName, gitSha, conf.Username, appName, procType, usingDockerfile)
 	quit := progress("...", conf.SessionIdleInterval())
 	buildHookResp, err := publishRelease(conf, builderKey, buildHook)
+
+	json_encoder.NewEncoder(os.Stdout).Encode(buildHook)
+
 	quit <- true
 	<-quit
 	log.Info("Launching App...")
@@ -254,7 +284,7 @@ func build(
 		return fmt.Errorf("No release returned from Deis controller")
 	}
 
-	log.Info("Done, %s:v%d deployed to Deis\n", appName, release)
+	log.Info("Done, %s:v%d - %v deployed to Deis\n", appName, release, dockerName)
 	log.Info("Use 'deis open' to view this application in your browser\n")
 	log.Info("To learn more, use 'deis help' or visit http://deis.io\n")
 
@@ -265,11 +295,11 @@ func build(
 
 func prettyPrintJSON(data interface{}) (string, error) {
 	output := &bytes.Buffer{}
-	if err := json.NewEncoder(output).Encode(data); err != nil {
+	if err := json_encoder.NewEncoder(output).Encode(data); err != nil {
 		return "", err
 	}
 	formatted := &bytes.Buffer{}
-	if err := json.Indent(formatted, output.Bytes(), "", "  "); err != nil {
+	if err := json_encoder.Indent(formatted, output.Bytes(), "", "  "); err != nil {
 		return "", err
 	}
 	return string(formatted.Bytes()), nil

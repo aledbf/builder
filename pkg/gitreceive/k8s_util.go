@@ -2,6 +2,8 @@ package gitreceive
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -245,4 +247,27 @@ func progress(msg string, interval time.Duration) chan bool {
 		}
 	}()
 	return quit
+}
+
+func getImagePullSecrets(c *client.Client, namespace string) ([]api.Secret, error) {
+	pullSecrets := os.Getenv("PULL_SECRETS")
+	if pullSecrets == "" {
+		return []api.Secret{}, nil
+	}
+
+	secrets := []api.Secret{}
+
+	secretsNames := strings.Split(pullSecrets, ",")
+	for _, secretName := range secretsNames {
+		secret, err := c.Secrets(namespace).Get(secretName)
+		if err != nil {
+			continue
+		}
+
+		if secret.Type == api.SecretTypeDockercfg {
+			secrets = append(secrets, *secret)
+		}
+	}
+
+	return secrets, nil
 }
