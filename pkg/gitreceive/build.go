@@ -50,7 +50,9 @@ func build(
 	fs sys.FS,
 	env sys.Env,
 	builderKey,
-	rawGitSha string) error {
+	rawGitSha string,
+	pw *k8s.BuildPodWatcher,
+) error {
 
 	dockerBuilderImagePullPolicy, err := k8s.PullPolicyFromString(conf.DockerBuilderImagePullPolicy)
 	if err != nil {
@@ -183,7 +185,7 @@ func build(
 		return fmt.Errorf("creating builder pod (%s)", err)
 	}
 
-	if err := waitForPod(kubeClient, newPod.Namespace, newPod.Name, conf.SessionIdleInterval(), conf.BuilderPodTickDuration(), conf.BuilderPodWaitDuration()); err != nil {
+	if err := k8s.WaitForPod(pw, newPod.Namespace, newPod.Name, conf.SessionIdleInterval(), conf.BuilderPodTickDuration(), conf.BuilderPodWaitDuration()); err != nil {
 		return fmt.Errorf("watching events for builder pod startup (%s)", err)
 	}
 
@@ -213,7 +215,7 @@ func build(
 	)
 	// check the state and exit code of the build pod.
 	// if the code is not 0 return error
-	if err := waitForPodEnd(kubeClient, newPod.Namespace, newPod.Name, conf.BuilderPodTickDuration(), conf.BuilderPodWaitDuration()); err != nil {
+	if err := k8s.WaitForPodEnd(pw, newPod.Namespace, newPod.Name, conf.BuilderPodTickDuration(), conf.BuilderPodWaitDuration()); err != nil {
 		return fmt.Errorf("error getting builder pod status (%s)", err)
 	}
 	log.Debug("Done")

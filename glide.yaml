@@ -9,7 +9,7 @@ import:
 - package: github.com/gorilla/mux
   version: 8096f47503459bcc74d1f4c487b7e6e42e5746b5
 - package: golang.org/x/crypto
-  version: c84e1f8e3a7e322d497cd16c0e8a13c7e127baf3
+  version: 1e61df8d9ea476e2e1504cd9a32b40280c7c6c7e
   subpackages:
   - ssh
 - package: gopkg.in/yaml.v2
@@ -23,7 +23,7 @@ import:
 - package: github.com/codegangsta/cli
   version: a65b733b303f0055f8d324d805f393cd3e7a7904
 - package: k8s.io/kubernetes
-  version: v1.2.4
+  version: master
 - package: github.com/arschles/assert
   version: 6882f85ccdc7c1822b146d1a6b0c2c48f91b5140
 - package: github.com/docker/distribution

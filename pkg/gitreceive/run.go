@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	builderconf "github.com/deis/builder/pkg/conf"
+	"github.com/deis/builder/pkg/k8s"
 	"github.com/deis/builder/pkg/sys"
 	"github.com/deis/pkg/log"
 	storagedriver "github.com/docker/distribution/registry/storage/driver"
+	"k8s.io/kubernetes/pkg/util/wait"
 
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 )
@@ -37,6 +39,9 @@ func Run(conf *Config, fs sys.FS, env sys.Env, storageDriver storagedriver.Stora
 		return fmt.Errorf("couldn't reach the api server (%s)", err)
 	}
 
+	pw := k8s.NewBuildPodWatcher(kubeClient, "deis")
+	go pw.Controller.Run(wait.NeverStop)
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -53,7 +58,7 @@ func Run(conf *Config, fs sys.FS, env sys.Env, storageDriver storagedriver.Stora
 		}
 		// if we're processing a receive-pack on an existing repo, run a build
 		if strings.HasPrefix(conf.SSHOriginalCommand, "git-receive-pack") {
-			if err := build(conf, storageDriver, kubeClient, fs, env, builderKey, newRev); err != nil {
+			if err := build(conf, storageDriver, kubeClient, fs, env, builderKey, newRev, pw); err != nil {
 				return err
 			}
 		}
