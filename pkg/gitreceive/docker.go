@@ -101,11 +101,14 @@ func buildImage(getter storage.ObjectGetter, bc *buildContext) (string, error) {
 	}
 
 	log.Info("publishing docker image")
+	var buf bytes.Buffer
 	err = client.PushImage(docker.PushImageOptions{
 		Name:         getImageName(bc.AppName),
 		Tag:          tagName,
-		OutputStream: os.Stdout,
+		OutputStream: &buf,
 	}, dAuth)
+
+	log.Debug("%s", buf.Bytes())
 
 	if err != nil {
 		return "", fmt.Errorf("unexpected error publishing docker image: %v", err)

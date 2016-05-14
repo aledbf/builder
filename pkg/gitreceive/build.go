@@ -271,25 +271,15 @@ func build(
 
 	buildHook := createBuildHook(dockerName, gitSha, conf.Username, appName, procType, usingDockerfile)
 	quit := progress("...", conf.SessionIdleInterval())
-	buildHookResp, err := publishRelease(conf, builderKey, buildHook)
-
-	json_encoder.NewEncoder(os.Stdout).Encode(buildHook)
-
+	err = publishRelease(conf, builderKey, buildHook)
 	quit <- true
 	<-quit
 	log.Info("Launching App...")
 	if err != nil {
 		return fmt.Errorf("publishing release (%s)", err)
 	}
-	release, ok := buildHookResp.Release["version"]
-	if !ok {
-		return fmt.Errorf("No release returned from Deis controller")
-	}
 
-	log.Info("Done, %s:v%d - %v deployed to Deis\n", appName, release, dockerName)
-	log.Info("Use 'deis open' to view this application in your browser\n")
-	log.Info("To learn more, use 'deis help' or visit http://deis.io\n")
-
+	log.Info("done")
 	run(repoCmd(repoDir, "git", "gc"))
 
 	return nil

@@ -1,4 +1,4 @@
-FROM alpine:edge
+FROM gcr.io/google_containers/ubuntu-slim:0.2
 
 # specify the git user's home and name
 ENV GITHOME /home/git
@@ -11,24 +11,23 @@ EXPOSE 2223
 EXPOSE 3000
 
 # install common packages, install & configure the SSH server, and set up directories, users & perms.
-# NOTE: $GITUSER is added to docker group to use docker without sudo and to slug group in order to share resources with the slug user
-RUN apk add --update-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   bash \
   sudo \
   git \
-  openssh \
+  openssh-client \
   coreutils \
   tar \
-  xz \
-  && rm -rf /var/cache/apk/* \
+  xz-utils \
+  && rm -rf /var/lib/apt/lists/* \
   && mkdir -p /var/run/sshd && rm -rf /etc/ssh/ssh_host* \
   && mkdir /apps \
-  && adduser -D -h $GITHOME $GITUSER \
+  && useradd -d $GITHOME $GITUSER \
   && mkdir -p $GITHOME/.ssh && chown git:git $GITHOME/.ssh \
   && chown -R $GITUSER:$GITUSER $GITHOME \
-  && addgroup -g 2000 slug && adduser -D -u 2000 -G slug slug \
-  && addgroup $GITUSER slug \
-  && passwd -u git
+  && addgroup --quiet --gid 2000 slug \
+  && useradd slug --uid=2000 --gid=2000 \
+  && usermod -a -G slug $GITUSER
 
 COPY . /
 

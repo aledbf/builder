@@ -87,53 +87,56 @@ func getAppConfig(conf *Config, builderKey, userName, appName string) (*pkg.Conf
 	return ret, nil
 }
 
-func publishRelease(conf *Config, builderKey string, buildHook *pkg.BuildHook) (*pkg.BuildHookResponse, error) {
+func publishRelease(conf *Config, builderKey string, buildHook *pkg.BuildHook) error {
 
 	var b bytes.Buffer
 	if err := json.NewEncoder(&b).Encode(buildHook); err != nil {
-		return nil, err
+		return err
 	}
 
 	postBody := strings.Replace(string(b.Bytes()), "'", "", -1)
 	if potentialExploit.MatchString(postBody) {
-		return nil, fmt.Errorf("an environment variable in the app is trying to exploit Shellshock")
+		return fmt.Errorf("an environment variable in the app is trying to exploit Shellshock")
 	}
 
 	url := controllerURLStr(conf, "v2", "hooks", "build")
 	log.Debug("Controller request POST /v2/hooks/build\n%s", postBody)
 	req, err := http.NewRequest("POST", url, strings.NewReader(postBody))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	setReqHeaders(builderKey, req)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		errMsg := new(pkg.ControllerErrorResponse)
-		if err := json.NewDecoder(res.Body).Decode(errMsg); err != nil {
-			//If an error occurs decoding the json print the whole response body
-			respBody, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				return nil, err
-			}
-			return nil, newUnexpectedControllerError(string(respBody))
+
+		//If an error occurs decoding the json print the whole response body
+		respBody, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
 		}
 
-		return nil, newUnexpectedControllerError(errMsg.ErrorMsg)
+		log.Info("body in error response (%v): %v", res.StatusCode, string(respBody))
+		if err := json.NewDecoder(bytes.NewBuffer(respBody)).Decode(errMsg); err != nil {
+			return newUnexpectedControllerError(string(respBody))
+		}
+
+		return newUnexpectedControllerError(errMsg.ErrorMsg)
 	}
 
 	ret := new(pkg.BuildHookResponse)
 	if err := json.NewDecoder(res.Body).Decode(ret); err != nil {
-		return nil, err
+		return err
 	}
 
-	return ret, nil
+	return nil
 }
 
 func receive(conf *Config, builderKey, gitSha string) error {
